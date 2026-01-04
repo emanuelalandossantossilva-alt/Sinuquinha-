@@ -1,30 +1,20 @@
-// No topo do arquivo
-const socket = io('https://sinuquinha-online.onrender.com'); 
-let meuNumeroJogador = 0;
-let vezDoJogador = 1;
+// Mesa com feltro verde musgo (estilo pano surrado)
+const feltroMat = new THREE.MeshStandardMaterial({ 
+    color: 0x0a3d1e, 
+    roughness: 1.0 
+}); 
 
-socket.on('atribuirJogador', (num) => {
-    meuNumeroJogador = num;
-    document.getElementById('turn-msg').innerText = `VOCÊ É O JOGADOR ${num}`;
-});
+// Madeira escura para as bordas (estilo mogno antigo)
+const madeiraMat = new THREE.MeshStandardMaterial({ 
+    color: 0x3d2610, 
+    roughness: 0.6 
+}); 
 
-// Na função de tacada, após soltar o clique/touch
-if (vezDoJogador === meuNumeroJogador) {
-    socket.emit('tacada', {
-        forca: forcaFinal,
-        angulo: angH,
-        // Envia as posições atuais para sincronizar
-        bolas: bolas.map(b => ({ id: b.userData.id, x: b.position.x, z: b.position.z }))
-    });
-}
+// Adicione uma luz amarelada (luz de lâmpada de bar pendurada)
+const luzBar = new THREE.PointLight(0xffaa00, 1.2);
+luzBar.position.set(0, 20, 0);
+scene.add(luzBar);
 
-// Para receber a jogada do outro
-socket.on('receberTacada', (dados) => {
-    aplicarForca(dados.forca, dados.angulo);
-    // Sincroniza posição das bolas para evitar erros de física
-    dados.bolas.forEach(info => {
-        const b = bolas.find(bola => bola.userData.id === info.id);
-        if(b) { b.position.set(info.x, b.position.y, info.z); }
-    });
-});
+// Neblina escura para o fundo sumir no breu do bar
+scene.fog = new THREE.FogExp2(0x0a0502, 0.015);
 

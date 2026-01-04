@@ -1,0 +1,55 @@
+* { 
+    touch-action: none; 
+    user-select: none; 
+    -webkit-tap-highlight-color: transparent; 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+}
+
+html, body { 
+    background: #050505; 
+    overflow: hidden; 
+    width: 100vw; 
+    height: 100vh; 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    font-family: sans-serif; 
+}
+
+canvas { display: block; width: 100%; height: 100%; }
+
+#fullscreen-btn { 
+    position: absolute; top: 20px; right: 20px; z-index: 100; 
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); 
+    color: white; padding: 10px; border-radius: 5px; font-size: 12px; cursor: pointer; 
+}
+
+#placar-lisas, #placar-listras { 
+    position: absolute; top: 80px; width: 45px; 
+    background: rgba(0,0,0,0.4); border-radius: 10px; padding: 10px 0;
+    display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 50;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+#placar-lisas { left: 15px; }
+#placar-listras { right: 15px; }
+
+.ball-icon { 
+    width: 28px; height: 28px; border-radius: 50%; 
+    display: flex; align-items: center; justify-content: center; 
+    font-size: 11px; font-weight: bold; color: black;
+    box-shadow: inset -3px -3px 6px rgba(0,0,0,0.4), 2px 2px 5px rgba(0,0,0,0.5);
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.label-placar { color: white; font-size: 9px; opacity: 0.6; margin-bottom: 5px; text-transform: uppercase; }
+
+@keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+
+#power-container { position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: rgba(0,0,0,0.5); z-index: 20; }
+#power-meter { width: 0%; height: 100%; background: linear-gradient(90deg, #00ff88, #ffff00, #ff4400); box-shadow: 0 0 15px rgba(0,255,136,0.7); }
+
+#ui-overlay { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); color: white; text-align: center; pointer-events: none; z-index: 30; width: 100%; }
+#turn-msg { font-size:14px; margin-bottom:5px; text-transform:uppercase; letter-spacing:2px; font-weight:bold; color:#00ff88; }
+.status-msg { font-size: 14px; font-weight: bold; background: rgba(20,10,5,0.85); padding: 10px 20px; border-radius: 8px; border: 1px solid #5d3a1a; color: #f0dca8; display: inline-block; min-width: 320px; }

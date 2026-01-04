@@ -2,23 +2,21 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Sinuquinha - Mira Semáforo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sinuquinha Multiplayer</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
 <body>
     <div id="fullscreen-btn">TELA CHEIA</div>
-    
     <div id="placar-lisas"><div class="label-placar">Lisas</div></div>
     <div id="placar-listras"><div class="label-placar">Listras</div></div>
-
     <div id="power-container"><div id="power-meter"></div></div>
-    
     <div id="ui-overlay">
-        <div id="turn-msg">JOGADOR 1</div>
+        <div id="turn-msg">AGUARDANDO CONEXÃO...</div>
         <div id="status-text" class="status-msg">Verde = Certo | Vermelho = Falta</div>
     </div>
-
     <script type="module" src="script.js"></script>
 </body>
 </html>
+

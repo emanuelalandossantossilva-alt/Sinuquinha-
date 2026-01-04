@@ -1,5 +1,5 @@
 // No topo do arquivo
-const socket = io('https://seu-projeto.onrender.com'); // Substitua pela URL do seu Render
+const socket = io('https://sinuquinha-online.onrender.com'); 
 let meuNumeroJogador = 0;
 let vezDoJogador = 1;
 

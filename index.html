@@ -17,13 +17,32 @@
 
         #power-container { position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: rgba(0,0,0,0.5); z-index: 20; }
         #power-meter { width: 0%; height: 100%; background: linear-gradient(90deg, #00ff88, #ffff00, #ff4400); box-shadow: 0 0 15px rgba(0,255,136,0.7); }
+        
         #ui-overlay { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); color: white; text-align: center; pointer-events: none; z-index: 30; width: 100%; }
         .status-msg { font-size: 14px; font-weight: bold; background: rgba(20,10,5,0.85); padding: 10px 20px; border-radius: 8px; border: 1px solid #5d3a1a; color: #f0dca8; display: inline-block; min-width: 320px; }
+
+        /* LISTA DE BOLAS CAÍDAS */
+        .pocket-list { position: absolute; top: 60px; display: flex; flex-direction: column; gap: 5px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; min-width: 60px; transition: opacity 0.3s; }
+        #list-pares { left: 15px; border-left: 3px solid #00d9ff; }
+        #list-impares { right: 15px; border-right: 3px solid #ffcc00; align-items: flex-end; }
+        .ball-icon { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: white; border: 1px solid rgba(255,255,255,0.4); box-shadow: inset -2px -2px 5px rgba(0,0,0,0.6), 0 2px 4px rgba(0,0,0,0.5); margin-bottom: 2px; }
+        .list-label { font-size: 9px; color: #fff; opacity: 0.6; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>  
 <body>  
     <div id="fullscreen-btn">TELA CHEIA</div>
     <div id="power-container"><div id="power-meter"></div></div>
+    
+    <div id="list-pares" class="pocket-list">
+        <div class="list-label">Pares</div>
+        <div id="balls-pares"></div>
+    </div>
+    
+    <div id="list-impares" class="pocket-list">
+        <div class="list-label">Ímpares</div>
+        <div id="balls-impares"></div>
+    </div>
+
     <div id="ui-overlay">
         <div id="turn-msg" style="font-size:14px; margin-bottom:5px; text-transform:uppercase; letter-spacing:2px; font-weight:bold; color:#00ff88;">JOGADOR 1</div>
         <div id="status-text" class="status-msg">Verde = Certo | Vermelho = Falta</div>
@@ -34,13 +53,8 @@
 
     const btnFs = document.getElementById('fullscreen-btn');
     btnFs.addEventListener('click', () => {
-        if (!document.fullscreenElement) { 
-            document.documentElement.requestFullscreen().catch(e => console.log(e)); 
-            btnFs.innerText = "SAIR TELA CHEIA"; 
-        } else { 
-            document.exitFullscreen(); 
-            btnFs.innerText = "TELA CHEIA"; 
-        }
+        if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); btnFs.innerText = "SAIR TELA CHEIA"; } 
+        else { document.exitFullscreen(); btnFs.innerText = "TELA CHEIA"; }
     });
 
     let gameState = { 
@@ -107,6 +121,8 @@
     });
 
     const bolas = [];
+    const coresC = { '2': '#0000ff', '3': '#ff0000', '4': '#4b0082', '5': '#ff69b4', '6': '#008000', '7': '#5d3a1a', '8': '#111111', '9': '#ffd700', '10': '#0000ff', '11': '#ff0000', '12': '#4b0082', '13': '#ff69b4', '14': '#008000', '15': '#5d3a1a' };
+
     function criarBola(cor, num, pos) {
         const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
         const ctx = canvas.getContext('2d'); ctx.fillStyle = cor; ctx.fillRect(0,0,128,128);
@@ -118,7 +134,7 @@
         const sMat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(gerarTexturaBrilho()), transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
         const glow = new THREE.Sprite(sMat); glow.scale.set(RAIO*3, RAIO*3, 1);
         group.add(b, glow); group.position.copy(pos);
-        group.userData = { vx:0, vz:0, ativa:true, caindo: false, isBranca: num===".", numero: num === "." ? 0 : parseInt(num), tipo: (parseInt(num)||0)%2===0?'par':'impar', mesh: b, glow: glow };
+        group.userData = { vx:0, vz:0, ativa:true, caindo: false, isBranca: num===".", numero: num === "." ? 0 : parseInt(num), tipo: (parseInt(num)||0)%2===0?'par':'impar', cor: cor, mesh: b, glow: glow };
         scene.add(group); bolas.push(group); return group;
     }
 
@@ -130,17 +146,29 @@
         ctx.fillStyle = grad; ctx.fillRect(0,0,64,64); return c;
     }
 
+    function adicionarBolaNaListaUI(userData) {
+        if(userData.isBranca || userData.numero === 1) return;
+        const container = document.getElementById(userData.tipo === 'par' ? 'balls-pares' : 'balls-impares');
+        const ballDiv = document.createElement('div');
+        ballDiv.className = 'ball-icon';
+        ballDiv.style.backgroundColor = userData.cor;
+        ballDiv.innerText = userData.numero;
+        container.appendChild(ballDiv);
+    }
+
     function removerBolaAdversario(qtd) {
         const tipoOponente = (gameState.turno === 1) ? gameState.p2Tipo : gameState.p1Tipo;
         let oponenteBolas = bolas.filter(b => b.userData.ativa && !b.userData.isBranca && b.userData.numero !== 1 && (!gameState.modoDefinido || b.userData.tipo === tipoOponente));
         oponenteBolas.sort((a, b) => a.userData.numero - b.userData.numero);
-        for(let i=0; i < qtd && i < oponenteBolas.length; i++) { oponenteBolas[i].userData.ativa = false; scene.remove(oponenteBolas[i]); }
+        for(let i=0; i < qtd && i < oponenteBolas.length; i++) { 
+            oponenteBolas[i].userData.ativa = false; 
+            adicionarBolaNaListaUI(oponenteBolas[i].userData);
+            scene.remove(oponenteBolas[i]); 
+        }
     }
 
     const branca = criarBola('#ffffff', '.', new THREE.Vector3(0, Y_BOLAS, 8));
     const bola1 = criarBola('#ffcc00', '1', new THREE.Vector3(0, Y_BOLAS, 17.2));
-
-    const coresC = { '2': '#0000ff', '3': '#ff0000', '4': '#4b0082', '5': '#ff69b4', '6': '#008000', '7': '#5d3a1a', '8': '#111111', '9': '#ffd700', '10': '#0000ff', '11': '#ff0000', '12': '#4b0082', '13': '#ff69b4', '14': '#008000', '15': '#5d3a1a' };
     let bIdx = 2;
     for (let r = 1; r < 5; r++) { for (let i = 0; i <= r; i++) { if (bIdx <= 15) { const x = (i - r * 0.5) * (RAIO * 2.05); const z = -8 - (r * RAIO * 1.85); criarBola(coresC[bIdx.toString()], bIdx.toString(), new THREE.Vector3(x, Y_BOLAS, z)); bIdx++; } } }
 
@@ -171,6 +199,7 @@
                     if(b.position.y < ALTURA_MESA-2) { 
                         let eraBranca = b.userData.isBranca; if(eraBranca) gameState.brancaCaiu = true;
                         if(b.userData.numero === 1) { alert("FIM DE JOGO!"); location.reload(); }
+                        if(!eraBranca) adicionarBolaNaListaUI(b.userData);
                         b.userData.ativa=false; scene.remove(b); gameState.aguardandoReset = true;
                         setTimeout(()=>{
                             if(eraBranca) { b.position.set(0,Y_BOLAS,10); b.userData.vx=b.userData.vz=0; b.userData.ativa=true; b.userData.caindo=false; scene.add(b); removerBolaAdversario(1); }
@@ -227,6 +256,10 @@
             document.getElementById('status-text').innerText = status;
             document.getElementById('turn-msg').innerText = "JOGADOR " + gameState.turno;
             document.getElementById('turn-msg').style.color = gameState.turno === 1 ? "#00ff88" : "#00d9ff";
+            if(gameState.modoDefinido) {
+                document.getElementById('list-pares').style.opacity = (gameState.p1Tipo === 'par' && gameState.turno === 1) || (gameState.p2Tipo === 'par' && gameState.turno === 2) ? "1" : "0.5";
+                document.getElementById('list-impares').style.opacity = (gameState.p1Tipo === 'impar' && gameState.turno === 1) || (gameState.p2Tipo === 'impar' && gameState.turno === 2) ? "1" : "0.5";
+            }
         }
 
         const dX = -Math.sin(angH), dZ = -Math.cos(angH);

@@ -1,16 +1,21 @@
-canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 1; /* Fica atrás da UI */
+body {
+    background: radial-gradient(circle, #2c1e14 0%, #000000 100%);
+    overflow: hidden; margin: 0; font-family: 'Arial Black', sans-serif;
 }
-
-#placar-lisas, #placar-listras, #ui-overlay {
-    z-index: 10; /* Garante que o placar fique na frente */
-    pointer-events: none; /* Permite clicar através da UI para jogar */
+#placar-lisas, #placar-listras {
+    position: absolute; top: 10px; padding: 10px;
+    background: rgba(20, 40, 20, 0.9); border: 3px solid #5d4037;
+    color: #e0e0e0; font-family: 'Courier New', monospace; z-index: 10;
 }
-
-#fullscreen-btn {
-    pointer-events: auto; /* Botão volta a ser clicável */
+#placar-lisas { left: 10px; }
+#placar-listras { right: 10px; }
+#power-container {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    width: 200px; height: 15px; background: #222; border: 2px solid #5d4037; z-index: 10;
+}
+#power-meter { width: 0%; height: 100%; background: #4caf50; transition: width 0.1s; }
+#ui-overlay {
+    position: absolute; top: 50%; width: 100%; text-align: center;
+    pointer-events: none; z-index: 10; color: #ffeb3b; text-shadow: 2px 2px #000;
 }
 

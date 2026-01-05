@@ -1,34 +1,16 @@
-/* ... seu código anterior ... */
-
-#placar-lisas, #placar-listras {
+canvas {
     position: absolute;
-    top: 20px;
-    background: rgba(20, 40, 20, 0.9);
-    border: 3px solid #5d4037;
-    color: #e0e0e0;
-    padding: 10px;
-    font-family: 'Courier New', monospace;
-    min-width: 80px;
-    text-align: center;
+    top: 0;
+    left: 0;
+    z-index: 1; /* Fica atrás da UI */
 }
 
-#placar-lisas { left: 20px; }
-#placar-listras { right: 20px; }
-
-#power-container {
-    position: absolute;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 200px;
-    height: 20px;
-    background: #333;
-    border: 2px solid #fff;
+#placar-lisas, #placar-listras, #ui-overlay {
+    z-index: 10; /* Garante que o placar fique na frente */
+    pointer-events: none; /* Permite clicar através da UI para jogar */
 }
 
-#power-meter {
-    width: 0%;
-    height: 100%;
-    background: linear-gradient(to right, #4caf50, #ffeb3b, #f44336);
+#fullscreen-btn {
+    pointer-events: auto; /* Botão volta a ser clicável */
 }
 

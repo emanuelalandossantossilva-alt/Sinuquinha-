@@ -3,7 +3,7 @@
 <head>  
     <meta charset="UTF-8">  
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">  
-    <title>Sinuquinha - Mira Semáforo</title>  
+    <title>Sinuquinha - Sem a 1</title>  
     <style>  
         * { touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; margin: 0; padding: 0; }  
         html, body { background: #050505; overflow: hidden; width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; font-family: sans-serif; }  
@@ -11,8 +11,10 @@
         
         #fullscreen-btn { 
             position: absolute; top: 20px; right: 20px; z-index: 100; 
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); 
-            color: white; padding: 10px; border-radius: 5px; font-size: 12px; cursor: pointer; pointer-events: auto; 
+            background: rgba(0, 255, 136, 0.2); border: 2px solid #00ff88; 
+            color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; 
+            font-weight: bold; cursor: pointer; pointer-events: auto;
+            text-shadow: 0 0 5px black; box-shadow: 0 0 10px rgba(0,255,136,0.3);
         }
 
         #power-container { position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: rgba(0,0,0,0.5); z-index: 20; }
@@ -21,8 +23,7 @@
         #ui-overlay { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); color: white; text-align: center; pointer-events: none; z-index: 30; width: 100%; }
         .status-msg { font-size: 14px; font-weight: bold; background: rgba(20,10,5,0.85); padding: 10px 20px; border-radius: 8px; border: 1px solid #5d3a1a; color: #f0dca8; display: inline-block; min-width: 320px; }
 
-        /* LISTA DE BOLAS CAÍDAS */
-        .pocket-list { position: absolute; top: 60px; display: flex; flex-direction: column; gap: 5px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; min-width: 60px; transition: opacity 0.3s; }
+        .pocket-list { position: absolute; top: 80px; display: flex; flex-direction: column; gap: 5px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; min-width: 60px; transition: opacity 0.3s; }
         #list-pares { left: 15px; border-left: 3px solid #00d9ff; }
         #list-impares { right: 15px; border-right: 3px solid #ffcc00; align-items: flex-end; }
         .ball-icon { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: white; border: 1px solid rgba(255,255,255,0.4); box-shadow: inset -2px -2px 5px rgba(0,0,0,0.6), 0 2px 4px rgba(0,0,0,0.5); margin-bottom: 2px; }
@@ -33,28 +34,27 @@
     <div id="fullscreen-btn">TELA CHEIA</div>
     <div id="power-container"><div id="power-meter"></div></div>
     
-    <div id="list-pares" class="pocket-list">
-        <div class="list-label">Pares</div>
-        <div id="balls-pares"></div>
-    </div>
-    
-    <div id="list-impares" class="pocket-list">
-        <div class="list-label">Ímpares</div>
-        <div id="balls-impares"></div>
-    </div>
+    <div id="list-pares" class="pocket-list"><div class="list-label">Pares</div><div id="balls-pares"></div></div>
+    <div id="list-impares" class="pocket-list"><div class="list-label">Ímpares</div><div id="balls-impares"></div></div>
 
     <div id="ui-overlay">
         <div id="turn-msg" style="font-size:14px; margin-bottom:5px; text-transform:uppercase; letter-spacing:2px; font-weight:bold; color:#00ff88;">JOGADOR 1</div>
-        <div id="status-text" class="status-msg">Verde = Certo | Vermelho = Falta</div>
+        <div id="status-text" class="status-msg">Mira Semáforo Ativa</div>
     </div>
 
 <script type="module">  
     import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';  
 
+    // Lógica de Tela Cheia
     const btnFs = document.getElementById('fullscreen-btn');
     btnFs.addEventListener('click', () => {
-        if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); btnFs.innerText = "SAIR TELA CHEIA"; } 
-        else { document.exitFullscreen(); btnFs.innerText = "TELA CHEIA"; }
+        if (!document.fullscreenElement) { 
+            document.documentElement.requestFullscreen().catch(e => console.log(e));
+            btnFs.innerText = "SAIR"; 
+        } else { 
+            document.exitFullscreen(); 
+            btnFs.innerText = "TELA CHEIA"; 
+        }
     });
 
     let gameState = { 
@@ -147,7 +147,7 @@
     }
 
     function adicionarBolaNaListaUI(userData) {
-        if(userData.isBranca || userData.numero === 1) return;
+        if(userData.isBranca) return;
         const container = document.getElementById(userData.tipo === 'par' ? 'balls-pares' : 'balls-impares');
         const ballDiv = document.createElement('div');
         ballDiv.className = 'ball-icon';
@@ -158,7 +158,7 @@
 
     function removerBolaAdversario(qtd) {
         const tipoOponente = (gameState.turno === 1) ? gameState.p2Tipo : gameState.p1Tipo;
-        let oponenteBolas = bolas.filter(b => b.userData.ativa && !b.userData.isBranca && b.userData.numero !== 1 && (!gameState.modoDefinido || b.userData.tipo === tipoOponente));
+        let oponenteBolas = bolas.filter(b => b.userData.ativa && !b.userData.isBranca && (!gameState.modoDefinido || b.userData.tipo === tipoOponente));
         oponenteBolas.sort((a, b) => a.userData.numero - b.userData.numero);
         for(let i=0; i < qtd && i < oponenteBolas.length; i++) { 
             oponenteBolas[i].userData.ativa = false; 
@@ -167,10 +167,19 @@
         }
     }
 
+    // Criando as bolas (SEM A NÚMERO 1)
     const branca = criarBola('#ffffff', '.', new THREE.Vector3(0, Y_BOLAS, 8));
-    const bola1 = criarBola('#ffcc00', '1', new THREE.Vector3(0, Y_BOLAS, 17.2));
     let bIdx = 2;
-    for (let r = 1; r < 5; r++) { for (let i = 0; i <= r; i++) { if (bIdx <= 15) { const x = (i - r * 0.5) * (RAIO * 2.05); const z = -8 - (r * RAIO * 1.85); criarBola(coresC[bIdx.toString()], bIdx.toString(), new THREE.Vector3(x, Y_BOLAS, z)); bIdx++; } } }
+    for (let r = 1; r < 5; r++) { 
+        for (let i = 0; i <= r; i++) { 
+            if (bIdx <= 15) { 
+                const x = (i - r * 0.5) * (RAIO * 2.05); 
+                const z = -8 - (r * RAIO * 1.85); 
+                criarBola(coresC[bIdx.toString()], bIdx.toString(), new THREE.Vector3(x, Y_BOLAS, z)); 
+                bIdx++; 
+            } 
+        } 
+    }
 
     const taco = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.05, 25, 16), madeiraMat); scene.add(taco);
     const ghostBall = new THREE.Mesh(new THREE.SphereGeometry(RAIO, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.15, wireframe: true })); scene.add(ghostBall);
@@ -198,7 +207,6 @@
                     alvoCamera = b; b.position.y -= 0.15; 
                     if(b.position.y < ALTURA_MESA-2) { 
                         let eraBranca = b.userData.isBranca; if(eraBranca) gameState.brancaCaiu = true;
-                        if(b.userData.numero === 1) { alert("FIM DE JOGO!"); location.reload(); }
                         if(!eraBranca) adicionarBolaNaListaUI(b.userData);
                         b.userData.ativa=false; scene.remove(b); gameState.aguardandoReset = true;
                         setTimeout(()=>{
@@ -217,8 +225,8 @@
                     b.userData.mesh.rotateOnWorldAxis(new THREE.Vector3(b.userData.vz, 0, -b.userData.vx).normalize(), (spd/6)/RAIO);
                     b.userData.vx *= FRICCAO; b.userData.vz *= FRICCAO;
                     cacapas.forEach(c => { if(Math.hypot(b.position.x-c.x, b.position.z-c.z) < 1.35) b.userData.caindo=true; });
-                    if(Math.abs(b.position.x) > LIMITE_X) { b.userData.vx *= -REBOTE_TABELA; b.position.x = Math.sign(b.position.x)*LIMITE_X; if(b===branca && !gameState.primeiraBolaAtingida) gameState.bateuNaTabela = true; }
-                    if(Math.abs(b.position.z) > LIMITE_Z) { b.userData.vz *= -REBOTE_TABELA; b.position.z = Math.sign(b.position.z)*LIMITE_Z; if(b===branca && !gameState.primeiraBolaAtingida) gameState.bateuNaTabela = true; }
+                    if(Math.abs(b.position.x) > LIMITE_X) { b.userData.vx *= -REBOTE_TABELA; b.position.x = Math.sign(b.position.x)*LIMITE_X; }
+                    if(Math.abs(b.position.z) > LIMITE_Z) { b.userData.vz *= -REBOTE_TABELA; b.position.z = Math.sign(b.position.z)*LIMITE_Z; }
                 }
             });
             for(let i=0; i<bolas.length; i++) {
@@ -247,9 +255,8 @@
             else if(gameState.matouAdversariaSemQuerer) { status = "MATOU A DO OPONENTE! PERDEU A VEZ"; }
             else if(gameState.modoDefinido) {
                 if(!gameState.primeiraBolaAtingida) { removerBolaAdversario(1); status = "SEGA! (-1 bola)"; trocaTurno = true; }
-                else if(gameState.primeiraBolaAtingida.userData.numero === 1 && !gameState.bateuNaTabela) { removerBolaAdversario(1); status = "DIRETO NA 1! (-1 bola)"; trocaTurno = true; }
-                else if(gameState.primeiraBolaAtingida.userData.tipo !== meuTipo && gameState.primeiraBolaAtingida.userData.numero !== 1) { 
-                    const pen = gameState.bateuNaTabela ? 1 : 2; removerBolaAdversario(pen); status = pen === 2 ? "DIRETO NO OPONENTE! (-2)" : "FALTA COM TABELA! (-1)"; trocaTurno = true; 
+                else if(gameState.primeiraBolaAtingida.userData.tipo !== meuTipo) { 
+                    removerBolaAdversario(1); status = "ERROU O TIPO! (-1 bola)"; trocaTurno = true; 
                 }
             }
             if(trocaTurno) gameState.turno = (gameState.turno === 1) ? 2 : 1;
@@ -279,71 +286,40 @@
         if(distColisao === 1000) {
             let tX = dX > 0 ? (LIMITE_X - branca.position.x)/dX : (-LIMITE_X - branca.position.x)/dX;
             let tZ = dZ > 0 ? (LIMITE_Z - branca.position.z)/dZ : (-LIMITE_Z - branca.position.z)/dZ;
-            distColisao = Math.min(tX, tZ); alvoMira = null;
+            distColisao = Math.min(tX, tZ);
+            alvoMira = null;
         }
 
         ghostBall.visible = !mesaMovendo && !gameState.aguardandoReset;
         ghostStopBall.visible = !mesaMovendo && !gameState.aguardandoReset && rawForca > 0.05;
 
         if(ghostBall.visible) {
-            ghostBall.position.set(
-                branca.position.x + dX * distColisao,
-                Y_BOLAS,
-                branca.position.z + dZ * distColisao
-            );
-
+            ghostBall.position.set(branca.position.x + dX * distColisao, Y_BOLAS, branca.position.z + dZ * distColisao);
             const meuTipo = (gameState.turno === 1) ? gameState.p1Tipo : gameState.p2Tipo;
             let corMira = 0xffffff, opMira = 0.15;
-
             if(alvoMira) {
-                if(alvoMira.userData.numero === 1) { 
-                    corMira = 0xff0000; opMira = 0.6; 
-                } else if(gameState.modoDefinido) {
+                if(gameState.modoDefinido) {
                     if(alvoMira.userData.tipo === meuTipo) { corMira = 0x00ff00; opMira = 0.6; }
                     else { corMira = 0xff0000; opMira = 0.6; }
-                } else {
-                    corMira = 0xffffff; opMira = 0.3;
-                }
+                } else { corMira = 0xffffff; opMira = 0.3; }
             }
-
-            ghostBall.material.color.setHex(corMira);
-            ghostBall.material.opacity = opMira;
-
+            ghostBall.material.color.setHex(corMira); ghostBall.material.opacity = opMira;
             const distMaxForca = (Math.pow(rawForca, 1.6)*4.2 / (1-FRICCAO))/6;
             const distFinal = Math.min(distColisao, distMaxForca);
-
-            ghostStopBall.position.set(
-                branca.position.x + dX * distFinal,
-                Y_BOLAS + 0.01,
-                branca.position.z + dZ * distFinal
-            );
-
+            ghostStopBall.position.set(branca.position.x + dX * distFinal, Y_BOLAS + 0.01, branca.position.z + dZ * distFinal);
             ghostStopBall.material.color.setHex(gameState.turno === 1 ? 0x00ff88 : 0x00d9ff);
         }
 
         taco.visible = !mesaMovendo && !gameState.aguardandoReset;
         if(taco.visible) {
             const db = 13.5 + rawForca * 6;
-            taco.position.set(
-                branca.position.x - dX * db,
-                Y_BOLAS + 0.2,
-                branca.position.z - dZ * db
-            );
-            taco.lookAt(branca.position.x, Y_BOLAS, branca.position.z);
-            taco.rotateX(-Math.PI/2);
+            taco.position.set(branca.position.x - dX * db, Y_BOLAS + 0.2, branca.position.z - dZ * db);
+            taco.lookAt(branca.position.x, Y_BOLAS, branca.position.z); taco.rotateX(-Math.PI/2);
         }
 
-        camera.position.lerp(new THREE.Vector3(
-            alvoCamera.position.x - dX * (1 + altCam * 0.9),
-            altCam,
-            alvoCamera.position.z - dZ * (1 + altCam * 0.9)
-        ), 0.08);
-
-        camera.userData.currentLook.lerp(alvoCamera.position, 0.08);
-        camera.lookAt(camera.userData.currentLook);
+        camera.position.lerp(new THREE.Vector3(alvoCamera.position.x - dX * (1 + altCam * 0.9), altCam, alvoCamera.position.z - dZ * (1 + altCam * 0.9)), 0.08);
+        camera.userData.currentLook.lerp(alvoCamera.position, 0.08); camera.lookAt(camera.userData.currentLook);
         renderer.render(scene, camera);
-        
-        // --- FIM DA LÓGICA INTEGRADA ---
     }
     loop();
 </script>  

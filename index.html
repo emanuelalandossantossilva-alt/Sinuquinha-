@@ -3,7 +3,7 @@
 <head>  
     <meta charset="UTF-8">  
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">  
-    <title>Sinuquinha Realista - Regras Atualizadas</title>  
+    <title>Sinuquinha - Regra de Estouro Múltiplo</title>  
     <style>  
         * { touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; margin: 0; padding: 0; }  
         html, body { background: #050505; overflow: hidden; width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; font-family: sans-serif; }  
@@ -38,7 +38,7 @@
 
     <div id="ui-overlay">
         <div id="turn-msg" style="font-size:14px; margin-bottom:5px; text-transform:uppercase; letter-spacing:2px; font-weight:bold; color:#00ff88;">JOGADOR 1</div>
-        <div id="status-text" class="status-msg">Início de Jogo</div>
+        <div id="status-text" class="status-msg">Fase de Escolha: Estouro!</div>
     </div>
 
 <script type="module">  
@@ -54,7 +54,8 @@
         modoDefinido: false, turno: 1, p1Tipo: null, p2Tipo: null, 
         fezPontoRodada: false, aguardandoReset: false,
         primeiraBolaAtingida: null, brancaCaiu: false,
-        matouAdversariaSemQuerer: false
+        matouAdversariaSemQuerer: false,
+        bolasCaidasNoEstouro: [] // Nova lista para controlar o estouro
     };
 
     const scene = new THREE.Scene();
@@ -74,37 +75,30 @@
 
     const ALTURA_MESA = 7.0, RAIO = 0.62, FRICCAO = 0.9965, REBOTE_TABELA = 0.7; 
     const Y_BOLAS = ALTURA_MESA + 1.0 + RAIO, LIMITE_X = 9.25, LIMITE_Z = 17.45;
-    
     const feltroMat = new THREE.MeshStandardMaterial({ color: 0x021a0e, roughness: 0.9 });
     const madeiraMat = new THREE.MeshStandardMaterial({ color: 0x2d1804, roughness: 0.5 }); 
     const aroInternoMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
 
-    // CORPO DA MESA
+    // MESA COMPLETA
     const mesaCorpo = new THREE.Mesh(new THREE.BoxGeometry(20, 1.5, 36), feltroMat);
     mesaCorpo.position.y = ALTURA_MESA + 0.25; scene.add(mesaCorpo);
-
     const mesaBase = new THREE.Mesh(new THREE.BoxGeometry(22, 2, 38), madeiraMat);
     mesaBase.position.y = ALTURA_MESA - 0.5; scene.add(mesaBase);
 
-    // TABELAS COMPLETAS
     function criarTabela(largura, x, z, rot) {
         const g = new THREE.Group();
         const s = new THREE.Shape();
         s.moveTo(-largura/2+0.5, 0); s.lineTo(largura/2-0.5, 0); s.absarc(largura/2-0.5, 0.6, 0.6, -Math.PI/2, 0, false);
         s.lineTo(largura/2, 1.2); s.lineTo(-largura/2, 1.2); s.absarc(-largura/2+0.5, 0.6, 0.6, Math.PI, Math.PI*1.5, false);
-        
         const mf = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: 0.8 }), feltroMat);
         const mm = new THREE.Mesh(new THREE.BoxGeometry(largura, 0.9, 0.9), madeiraMat);
-        mm.position.set(0, 1.6, 0.4); 
-        g.add(mf, mm); g.rotation.x = -Math.PI/2; g.rotation.z = rot; 
+        mm.position.set(0, 1.6, 0.4); g.add(mf, mm); g.rotation.x = -Math.PI/2; g.rotation.z = rot; 
         g.position.set(x, ALTURA_MESA + 0.75, z); scene.add(g);
     }
-    
     criarTabela(16.3, -10, -9.2, Math.PI/2); criarTabela(16.3, 10, -9.2, -Math.PI/2);
     criarTabela(18.2, 0, -18.2, 0); criarTabela(18.2, 0, 18.2, Math.PI);
     criarTabela(16.3, -10, 9.2, Math.PI/2); criarTabela(16.3, 10, 9.2, -Math.PI/2);
 
-    // CAÇAPAS COMPLETAS
     const cacapas = [
         {x:-10.0, z: 18.2, rot: Math.PI/4, isMiddle: false}, {x:10.0,  z: 18.2, rot: -Math.PI/4, isMiddle: false}, 
         {x:-10.5, z:0, rot: Math.PI/2, isMiddle: true}, {x:10.5,  z:0, rot: -Math.PI/2, isMiddle: true},
@@ -113,18 +107,12 @@
 
     cacapas.forEach(p => {
         const rA = p.isMiddle ? 1.05 : 1.45;
-        // Aro interno escuro
         const aro = new THREE.Mesh(new THREE.TorusGeometry(rA, 0.1, 12, 24), aroInternoMat);
         aro.rotation.x = Math.PI/2; aro.position.set(p.x, ALTURA_MESA + 0.95, p.z); scene.add(aro);
-        
-        // Acabamento de madeira externo
         const arcoM = p.isMiddle ? Math.PI : Math.PI * 1.20;
         const aroM = new THREE.Mesh(new THREE.TorusGeometry(rA + 0.3, 0.45, 12, 32, arcoM), madeiraMat);
         aroM.position.set(p.isMiddle ? (p.x < 0 ? p.x - 0.1 : p.x + 0.1) : p.x, ALTURA_MESA + 1.15, p.z); 
-        aroM.rotation.x = Math.PI/2; 
-        aroM.rotation.z = p.rot - (p.isMiddle ? 0 : (arcoM - Math.PI) / 2); 
-        scene.add(aroM);
-
+        aroM.rotation.x = Math.PI/2; aroM.rotation.z = p.rot - (p.isMiddle ? 0 : (arcoM - Math.PI) / 2); scene.add(aroM);
         const tampa = new THREE.Mesh(new THREE.CircleGeometry(rA - 0.05, 24), new THREE.MeshBasicMaterial({ color: 0x000000 }));
         tampa.rotation.x = -Math.PI/2; tampa.position.set(p.x, ALTURA_MESA + 1.01, p.z); scene.add(tampa);
     });
@@ -137,7 +125,6 @@
         const ctx = canvas.getContext('2d'); ctx.fillStyle = cor; ctx.fillRect(0,0,128,128);
         ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(64,64,35,0,Math.PI*2); ctx.fill();
         ctx.fillStyle = 'black'; ctx.font = 'bold 40px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(num,64,64);
-        
         const group = new THREE.Group();
         const mat = new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(canvas), roughness: 0.1 });
         const b = new THREE.Mesh(new THREE.SphereGeometry(RAIO, 32, 32), mat);
@@ -194,7 +181,13 @@
         if(isCharging) { rawForca = Math.max(0, Math.min(1.0, (t.clientY - touchPos.y)/250)); document.getElementById('power-meter').style.width = (rawForca*100)+'%'; }
         else if(!mesaMovendo) { angH -= (t.clientX - touchPos.x)*0.005; altCam = Math.max(9, Math.min(48, altCam + (t.clientY - touchPos.y)*0.2)); touchPos={x:t.clientX, y:t.clientY}; }
     };
-    window.ontouchend = () => { if(!mesaMovendo && isCharging && rawForca > 0.01) { const f = Math.pow(rawForca, 1.6)*4.2; branca.userData.vx = Math.sin(angH)*-f; branca.userData.vz = Math.cos(angH)*-f; gameState.fezPontoRodada = false; gameState.primeiraBolaAtingida = null; gameState.brancaCaiu = false; gameState.matouAdversariaSemQuerer = false; } isCharging=false; rawForca=0; document.getElementById('power-meter').style.width='0%'; };
+    window.ontouchend = () => { if(!mesaMovendo && isCharging && rawForca > 0.01) { 
+        const f = Math.pow(rawForca, 1.6)*4.2; 
+        branca.userData.vx = Math.sin(angH)*-f; branca.userData.vz = Math.cos(angH)*-f; 
+        gameState.fezPontoRodada = false; gameState.primeiraBolaAtingida = null; 
+        gameState.brancaCaiu = false; gameState.matouAdversariaSemQuerer = false; 
+        gameState.bolasCaidasNoEstouro = []; // Reseta lista de caídas no início da tacada
+    } isCharging=false; rawForca=0; document.getElementById('power-meter').style.width='0%'; };
 
     function loop() {
         requestAnimationFrame(loop);
@@ -208,20 +201,28 @@
                     if(b.position.y < ALTURA_MESA-2) { 
                         let eraBranca = b.userData.isBranca; 
                         if(eraBranca) gameState.brancaCaiu = true;
-                        if(!eraBranca) adicionarBolaNaListaUI(b.userData);
+                        if(!eraBranca) {
+                            adicionarBolaNaListaUI(b.userData);
+                            if(!gameState.modoDefinido) gameState.bolasCaidasNoEstouro.push(b.userData.tipo);
+                        }
                         b.userData.ativa=false; scene.remove(b); gameState.aguardandoReset = true;
                         
                         setTimeout(()=>{
                             if(eraBranca) { 
                                 b.position.set(0,Y_BOLAS,10); b.userData.vx=b.userData.vz=0; b.userData.ativa=true; b.userData.caindo=false; scene.add(b); 
-                                // REGRA: Remove bola se já houver escolha feita
                                 if(gameState.modoDefinido) removerBolaAdversario(1); 
                                 gameState.fezPontoRodada = false; 
                             }
                             else if(!gameState.modoDefinido) { 
-                                gameState.modoDefinido = true; 
-                                gameState.p1Tipo = (gameState.turno === 1) ? b.userData.tipo : (b.userData.tipo === 'par' ? 'impar' : 'par'); 
-                                gameState.p2Tipo = (gameState.p1Tipo === 'par') ? 'impar' : 'par'; 
+                                // Lógica de Estouro:
+                                const tiposUnicos = [...new Set(gameState.bolasCaidasNoEstouro)];
+                                if(tiposUnicos.length === 1) {
+                                    // Caiu só um tipo: Define os grupos
+                                    gameState.modoDefinido = true; 
+                                    gameState.p1Tipo = (gameState.turno === 1) ? tiposUnicos[0] : (tiposUnicos[0] === 'par' ? 'impar' : 'par'); 
+                                    gameState.p2Tipo = (gameState.p1Tipo === 'par') ? 'impar' : 'par'; 
+                                }
+                                // Em qualquer caso de bola encaçapada no estouro, a vez continua
                                 gameState.fezPontoRodada = true; 
                             } 
                             else if(b.userData.tipo === meuTipo) { gameState.fezPontoRodada = true; }
@@ -267,6 +268,10 @@
 
             if(gameState.brancaCaiu) { status = gameState.modoDefinido ? "SUICÍDIO! (-1 bola)" : "BRANCA CAIU! PERDEU A VEZ"; } 
             else if(gameState.matouAdversariaSemQuerer) { status = "MATOU A DO OPONENTE! PERDEU A VEZ"; }
+            else if(!gameState.modoDefinido && gameState.fezPontoRodada) {
+                const tiposUnicos = [...new Set(gameState.bolasCaidasNoEstouro)];
+                status = tiposUnicos.length > 1 ? "MATOU UMA DE CADA! SEGUE NA ESCOLHA" : "BOLA CAIU! GRUPOS DEFINIDOS";
+            }
             else if(gameState.modoDefinido) {
                 if(!gameState.primeiraBolaAtingida) { removerBolaAdversario(1); status = "SEGA! (-1 bola)"; trocaTurno = true; }
                 else if(gameState.primeiraBolaAtingida.userData.tipo !== meuTipo) { removerBolaAdversario(1); status = "ERROU O TIPO! (-1 bola)"; trocaTurno = true; }
@@ -289,7 +294,7 @@
                     const dC = proj - Math.sqrt(Math.pow(RAIO*2,2)-Math.pow(dR,2)); 
                     if(dC < distColisao) { distColisao = dC; alvoMira = b; }
                 } 
-            } 
+      } 
         });
 
         if(distColisao === 1000) {

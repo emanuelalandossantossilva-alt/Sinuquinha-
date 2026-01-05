@@ -1,35 +1,34 @@
-body {
-    background: radial-gradient(circle, #2c1e14 0%, #000000 100%); /* Fundo escuro de bar */
-    overflow: hidden;
-    margin: 0;
-    font-family: 'Arial Black', sans-serif;
-}
+/* ... seu código anterior ... */
 
-/* Mesa de Sinuca - Feltro Verde Clássico */
-canvas { 
-    display: block; 
-    filter: contrast(1.1) brightness(0.9); /* Estilo mais rústico */
-}
-
-/* Placar estilo lousa de giz */
 #placar-lisas, #placar-listras {
+    position: absolute;
+    top: 20px;
     background: rgba(20, 40, 20, 0.9);
-    border: 3px solid #5d4037; /* Moldura de madeira */
+    border: 3px solid #5d4037;
     color: #e0e0e0;
     padding: 10px;
     font-family: 'Courier New', monospace;
-    text-transform: uppercase;
+    min-width: 80px;
+    text-align: center;
 }
 
-/* Overlay de Quebrada */
-#ui-overlay {
-    text-shadow: 2px 2px #000;
+#placar-lisas { left: 20px; }
+#placar-listras { right: 20px; }
+
+#power-container {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 20px;
+    background: #333;
+    border: 2px solid #fff;
 }
 
-#turn-msg {
-    color: #ffeb3b; /* Amarelo vivo */
-    background: rgba(0,0,0,0.7);
-    padding: 10px;
-    border-radius: 5px;
+#power-meter {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(to right, #4caf50, #ffeb3b, #f44336);
 }
 

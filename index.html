@@ -3,7 +3,7 @@
 <head>  
     <meta charset="UTF-8">  
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">  
-    <title>Sinuquinha Realista - Tela Cheia Total</title>  
+    <title>Sinuquinha Realista</title>  
     <style>  
         * { touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; margin: 0; padding: 0; }  
         html, body { background: #000; overflow: hidden; width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; }  
@@ -120,12 +120,15 @@
     }
 
     function gerarTexturaBrilho() { const c = document.createElement('canvas'); c.width = 64; c.height = 64; const ctx = c.getContext('2d'); const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32); grad.addColorStop(0, 'rgba(255,255,255,1)'); grad.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = grad; ctx.fillRect(0,0,64,64); return c; }
+    
     function adicionarBolaNaListaUI(userData) { if(userData.isBranca) return; const container = document.getElementById(userData.tipo === 'par' ? 'balls-pares' : 'balls-impares'); const ballDiv = document.createElement('div'); ballDiv.className = 'ball-icon'; ballDiv.style.backgroundColor = userData.cor; ballDiv.innerText = userData.numero; container.appendChild(ballDiv); }
     
-    function removerMinhaBolaPelaFalta(tipoJogador) {
-        let minhasBolas = bolas.filter(b => b.userData.ativa && !b.userData.isBranca && b.userData.tipo === tipoJogador);
-        minhasBolas.sort((a, b) => a.userData.numero - b.userData.numero);
-        if(minhasBolas.length > 0) { minhasBolas[0].userData.ativa = false; adicionarBolaNaListaUI(minhasBolas[0].userData); scene.remove(minhasBolas[0]); }
+    function removerBolas(tipo, qtd) {
+        let targets = bolas.filter(b => b.userData.ativa && !b.userData.isBranca && b.userData.tipo === tipo);
+        targets.sort((a,b)=>a.userData.numero - b.userData.numero);
+        for(let i=0; i<qtd && i<targets.length; i++) {
+            targets[i].userData.ativa = false; adicionarBolaNaListaUI(targets[i].userData); scene.remove(targets[i]);
+        }
     }
 
     const branca = criarBola('#ffffff', '.', new THREE.Vector3(0, Y_BOLAS, 8));
@@ -158,17 +161,19 @@
                     alvoCamera = b; b.position.y -= 0.15; 
                     if(b.position.y < ALTURA_MESA-2) { 
                         let eraBranca = b.userData.isBranca; if(eraBranca) gameState.brancaCaiu = true;
-                        if(!eraBranca) { adicionarBolaNaListaUI(b.userData); if(!gameState.modoDefinido) gameState.bolasCaidasNoEstouro.push(b.userData.tipo); }
+                        if(!eraBranca) { 
+                            adicionarBolaNaListaUI(b.userData); 
+                            if(!gameState.modoDefinido) gameState.bolasCaidasNoEstouro.push(b.userData.tipo); 
+                            else if(b.userData.tipo !== meuTipo) gameState.matouAdversariaSemQuerer = true;
+                            else gameState.fezPontoRodada = true;
+                        }
                         b.userData.ativa=false; scene.remove(b); gameState.aguardandoReset = true;
                         setTimeout(()=>{
-                            if(eraBranca) { b.position.set(0,Y_BOLAS,10); b.userData.vx=b.userData.vz=0; b.userData.ativa=true; b.userData.caindo=false; scene.add(b); if(gameState.modoDefinido) removerMinhaBolaPelaFalta(meuTipo); }
+                            if(eraBranca) { b.position.set(0,Y_BOLAS,10); b.userData.vx=b.userData.vz=0; b.userData.ativa=true; b.userData.caindo=false; scene.add(b); }
                             else if(!gameState.modoDefinido) { 
                                 const tC = [...new Set(gameState.bolasCaidasNoEstouro)];
                                 if(tC.length === 1) { gameState.modoDefinido = true; gameState.p1Tipo = gameState.turno === 1 ? tC[0] : (tC[0]==='par'?'impar':'par'); gameState.p2Tipo = gameState.p1Tipo==='par'?'impar':'par'; }
-                                gameState.fezPontoRodada = true; 
                             } 
-                            else if(b.userData.tipo === meuTipo) { gameState.fezPontoRodada = true; }
-                            else { gameState.matouAdversariaSemQuerer = true; }
                             alvoCamera = branca; gameState.aguardandoReset = false;
                         }, 1800);
                     }
@@ -190,7 +195,7 @@
                     const dx=b2.position.x-b1.position.x, dz=b2.position.z-b1.position.z, d=Math.hypot(dx,dz);
                     if(d < RAIO*2) {
                         const nx=dx/d, nz=dz/d, vRel = (b1.userData.vx-b2.userData.vx)*nx + (b1.userData.vz-b2.userData.vz)*nz;
-                        if(vRel > 0) { if(b1 === branca && !gameState.primeiraBolaAtingida) gameState.primeiraBolaAtingida = b2; if(b2 === branca && !gameState.primeiraBolaAtingida) gameState.primeiraBolaAtingida = b1; const imp = 1.02*vRel; b1.userData.vx -= imp*nx; b1.userData.vz -= imp*nz; b2.userData.vx += imp*nx; b2.userData.vz += imp*nz; }
+                        if(vRel > 0) { if(b1 === branca && !gameState.primeiraBolaAtingida) gameState.primeiraBolaAtingida = b2.userData; if(b2 === branca && !gameState.primeiraBolaAtingida) gameState.primeiraBolaAtingida = b1.userData; const imp = 1.02*vRel; b1.userData.vx -= imp*nx; b1.userData.vz -= imp*nz; b2.userData.vx += imp*nx; b2.userData.vz += imp*nz; }
                     }
                 }
             }
@@ -201,22 +206,21 @@
         
         if (movendoAntigo && !mesaMovendo && !gameState.aguardandoReset) {
             const meuTipo = (gameState.turno === 1) ? gameState.p1Tipo : gameState.p2Tipo;
-            let status = "Sua vez!"; let trocaTurno = !gameState.fezPontoRodada || gameState.matouAdversariaSemQuerer || gameState.brancaCaiu;
-            if(gameState.brancaCaiu) { status = "SUICÍDIO! (-1 sua)"; } 
-            else if(gameState.matouAdversariaSemQuerer) { 
-                reMinhaBolaPelaFalta(meuTipo);
-                status = "MATOU A DELE SEM QUERER! (-1 sua)"; 
-            }
-            else if(gameState.modoDefinido) {
-                if(!gameState.primeiraBolaAtingida) { removerMinhaBolaPelaFalta(meuTipo); status = "CEGOU! (-1 sua)"; trocaTurno = true; }
-                else if(gameState.primeiraBolaAtingida.userData.tipo !== meuTipo) { 
-                    const pen = gameState.bateuNaTabela ? 1 : 2; 
-                    for(let k=0; k<pen; k++) removerMinhaBolaPelaFalta(meuTipo);
-                    status = pen === 2 ? "DIRETO NO OPONENTE! (-2)" : "FALTA COM TABELA! (-1)"; trocaTurno = true; 
+            const adversarioTipo = meuTipo === 'par' ? 'impar' : 'par';
+            let txt = "Sua vez!"; let troca = !gameState.fezPontoRodada || gameState.matouAdversariaSemQuerer || gameState.brancaCaiu;
+
+            if(gameState.modoDefinido) {
+                if(gameState.brancaCaiu) { removerBolas(meuTipo, 1); txt = "SUICÍDIO! (-1 sua)"; }
+                else if(gameState.matouAdversariaSemQuerer) { removerBolas(meuTipo, 1); txt = "DERRUBOU A DELE! (-1 sua)"; }
+                else if(!gameState.primeiraBolaAtingida) { removerBolas(adversarioTipo, 1); txt = "CEGOU! (+1 oponente)"; troca = true; }
+                else if(gameState.primeiraBolaAtingida.tipo !== meuTipo) {
+                    const pen = gameState.bateuNaTabela ? 1 : 2;
+                    removerBolas(adversarioTipo, pen);
+                    txt = pen === 2 ? "DIRETO NA ERRADA! (+2 oponente)" : "FALTA COM TABELA! (+1 oponente)"; troca = true;
                 }
             }
-            if(trocaTurno) gameState.turno = (gameState.turno === 1) ? 2 : 1;
-            document.getElementById('status-text').innerText = status;
+            if(troca) gameState.turno = (gameState.turno === 1) ? 2 : 1;
+            document.getElementById('status-text').innerText = txt;
             document.getElementById('turn-msg').innerText = "JOGADOR " + gameState.turno;
             document.getElementById('turn-msg').style.color = gameState.turno === 1 ? "#00ff88" : "#00d9ff";
         }
@@ -245,7 +249,6 @@
         renderer.render(scene, camera);
     }
     loop();
-    function reMinhaBolaPelaFalta(tipo) { removerMinhaBolaPelaFalta(tipo); }
 </script>  
 </body> 
 </html>

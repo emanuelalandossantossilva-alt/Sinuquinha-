@@ -3,7 +3,7 @@
 <head>  
     <meta charset="UTF-8">  
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">  
-    <title>Sinuquinha Realista - Regras Oficiais</title>  
+    <title>Sinuquinha Realista - Mira Semáforo</title>  
     <style>  
         * { touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; margin: 0; padding: 0; }  
         html, body { background: #000; overflow: hidden; width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; }  
@@ -15,7 +15,7 @@
         .status-msg { font-size: 14px; font-weight: bold; background: rgba(20,10,5,0.85); padding: 10px 20px; border-radius: 8px; border: 1px solid #5d3a1a; color: #f0dca8; display: inline-block; min-width: 320px; }
         .pocket-list { position: absolute; top: 80px; display: flex; flex-direction: column; gap: 5px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; min-width: 60px; z-index: 40; }
         #list-pares { left: env(safe-area-inset-left, 15px); border-left: 3px solid #00d9ff; }
-        #list-impares { right: env(safe-area-inset-right, 15px); border-right: 3px solid #ffcc00; align-items: flex-end; }
+        #list-impares { right: env(safe-area-inset-right, 15px); border-right: 30px solid #ffcc00; align-items: flex-end; }
         .ball-icon { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: white; border: 1px solid rgba(255,255,255,0.4); box-shadow: inset -2px -2px 5px rgba(0,0,0,0.6), 0 2px 4px rgba(0,0,0,0.5); margin-bottom: 2px; }
     </style>
 </head>  
@@ -26,7 +26,7 @@
     <div id="list-impares" class="pocket-list"><div id="balls-impares"></div></div>
     <div id="ui-overlay">
         <div id="turn-msg" style="font-size:14px; margin-bottom:5px; text-transform:uppercase; letter-spacing:2px; font-weight:bold; color:#00ff88;">JOGADOR 1</div>
-        <div id="status-text" class="status-msg">Inicie o jogo!</div>
+        <div id="status-text" class="status-msg">Mira Semáforo Ativada!</div>
     </div>
 
 <script type="module">  
@@ -131,6 +131,13 @@
         }
     }
 
+    function punirComBranca() {
+        if (!gameState.modoDefinido) return;
+        const meuTipo = (gameState.turno === 1) ? gameState.p1Tipo : gameState.p2Tipo;
+        const oponenteTipo = (meuTipo === 'par') ? 'impar' : 'par';
+        removerBolas(oponenteTipo, 1);
+    }
+
     const branca = criarBola('#ffffff', '.', new THREE.Vector3(0, Y_BOLAS, 8));
     let bIdx = 2;
     for (let r = 1; r < 5; r++) { for (let i = 0; i <= r; i++) { if (bIdx <= 15) { const x = (i - r * 0.5) * (RAIO * 2.05); const z = -8 - (r * RAIO * 1.85); criarBola(coresC[bIdx.toString()], bIdx.toString(), new THREE.Vector3(x, Y_BOLAS, z)); bIdx++; } } }
@@ -160,7 +167,8 @@
                 if(b.userData.caindo) {
                     alvoCamera = b; b.position.y -= 0.15; 
                     if(b.position.y < ALTURA_MESA-2) { 
-                        let eraBranca = b.userData.isBranca; if(eraBranca) gameState.brancaCaiu = true;
+                        let eraBranca = b.userData.isBranca; 
+                        if(eraBranca) { gameState.brancaCaiu = true; punirComBranca(); }
                         if(!eraBranca) { 
                             adicionarBolaNaListaUI(b.userData); 
                             if(!gameState.modoDefinido) {
@@ -168,11 +176,7 @@
                                 gameState.p1Tipo = gameState.turno === 1 ? b.userData.tipo : (b.userData.tipo==='par'?'impar':'par'); 
                                 gameState.p2Tipo = gameState.p1Tipo==='par'?'impar':'par';
                                 gameState.fezPontoRodada = true;
-                            } else if(b.userData.tipo !== meuTipo) {
-                                gameState.matouAdversariaSemQuerer = true;
-                            } else {
-                                gameState.fezPontoRodada = true;
-                            }
+                            } else if(b.userData.tipo !== meuTipo) { gameState.matouAdversariaSemQuerer = true; } else { gameState.fezPontoRodada = true; }
                         }
                         b.userData.ativa=false; scene.remove(b); gameState.aguardandoReset = true;
                         setTimeout(()=>{
@@ -212,29 +216,13 @@
             const adversarioTipo = meuTipo === 'par' ? 'impar' : 'par';
             let txt = "Sua vez!"; 
             let troca = !gameState.fezPontoRodada || gameState.matouAdversariaSemQuerer || gameState.brancaCaiu;
-
             if(gameState.modoDefinido) {
-                if(gameState.brancaCaiu) { 
-                    removerBolas(meuTipo, 1); 
-                    txt = "SUICÍDIO! (-1 sua)"; 
-                }
-                else if(gameState.matouAdversariaSemQuerer) { 
-                    removerBolas(meuTipo, 1); 
-                    txt = "DERRUBOU A DELE! (-1 sua)"; 
-                }
-                else if(!gameState.primeiraBolaAtingida) { 
-                    removerBolas(adversarioTipo, 1); 
-                    txt = "CEGOU! (+1 oponente)"; 
-                    troca = true; 
-                }
+                if(gameState.brancaCaiu) { txt = "BRANCA CAIU! (+1 oponente)"; }
+                else if(gameState.matouAdversariaSemQuerer) { removerBolas(meuTipo, 1); txt = "DERRUBOU A DELE! (-1 sua)"; }
+                else if(!gameState.primeiraBolaAtingida) { removerBolas(adversarioTipo, 1); txt = "CEGOU! (+1 oponente)"; troca = true; }
                 else if(gameState.primeiraBolaAtingida.tipo !== meuTipo) {
-                    if (gameState.bateuNaTabelaAntes) {
-                        removerBolas(adversarioTipo, 1);
-                        txt = "TABELA NA ERRADA! (+1 oponente)";
-                    } else {
-                        removerBolas(adversarioTipo, 2);
-                        txt = "DIRETO NA ERRADA! (+2 oponente)";
-                    }
+                    if (gameState.bateuNaTabelaAntes) { removerBolas(adversarioTipo, 1); txt = "TABELA NA ERRADA! (+1 oponente)"; } 
+                    else { removerBolas(adversarioTipo, 2); txt = "DIRETO NA ERRADA! (+2 oponente)"; }
                     troca = true;
                 }
             }
@@ -253,9 +241,24 @@
         ghostStopBall.visible = !mesaMovendo && !gameState.aguardandoReset && rawForca > 0.05;
         if(ghostBall.visible) {
             ghostBall.position.set(branca.position.x + dX * distColisao, Y_BOLAS, branca.position.z + dZ * distColisao);
-            const meuTipo = (gameState.turno === 1) ? gameState.p1Tipo : gameState.p2Tipo;
-            if(alvoMira && gameState.modoDefinido) { ghostBall.material.color.setHex(alvoMira.userData.tipo === meuTipo ? 0x00ff00 : 0xff0000); ghostBall.material.opacity = 0.6; }
-            else { ghostBall.material.color.setHex(0xffffff); ghostBall.material.opacity = 0.15; }
+            
+            // --- LÓGICA DA MIRA SEMÁFORO ---
+            if(alvoMira) {
+                const meuTipo = (gameState.turno === 1) ? gameState.p1Tipo : gameState.p2Tipo;
+                if(!gameState.modoDefinido) {
+                    // Antes de definir: Par = Verde / Ímpar = Azul
+                    ghostBall.material.color.setHex(alvoMira.userData.tipo === 'par' ? 0x00ff00 : 0x00d9ff);
+                } else {
+                    // Depois de definir: Meu grupo = Verde / Adversário = Vermelho
+                    ghostBall.material.color.setHex(alvoMira.userData.tipo === meuTipo ? 0x00ff00 : 0xff0000);
+                }
+                ghostBall.material.opacity = 0.6;
+            } else {
+                ghostBall.material.color.setHex(0xffffff);
+                ghostBall.material.opacity = 0.15;
+            }
+            // ------------------------------
+
             const distMax = (Math.pow(rawForca, 1.6)*4.2 / (1-FRICCAO))/6;
             ghostStopBall.position.set(branca.position.x + dX * Math.min(distColisao, distMax), Y_BOLAS + 0.01, branca.position.z + dZ * Math.min(distColisao, distMax));
             ghostStopBall.material.color.setHex(gameState.turno === 1 ? 0x00ff88 : 0x00d9ff);

@@ -3,7 +3,7 @@
 <head>  
     <meta charset="UTF-8">  
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">  
-    <title>Sinuquinha Realista</title>  
+    <title>Sinuquinha Realista - Regras Oficiais</title>  
     <style>  
         * { touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; margin: 0; padding: 0; }  
         html, body { background: #000; overflow: hidden; width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; }  
@@ -15,7 +15,7 @@
         .status-msg { font-size: 14px; font-weight: bold; background: rgba(20,10,5,0.85); padding: 10px 20px; border-radius: 8px; border: 1px solid #5d3a1a; color: #f0dca8; display: inline-block; min-width: 320px; }
         .pocket-list { position: absolute; top: 80px; display: flex; flex-direction: column; gap: 5px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; min-width: 60px; z-index: 40; }
         #list-pares { left: env(safe-area-inset-left, 15px); border-left: 3px solid #00d9ff; }
-        #list-impares { right: env(safe-area-inset-right, 15px); border-right: 30px solid #ffcc00; align-items: flex-end; }
+        #list-impares { right: env(safe-area-inset-right, 15px); border-right: 3px solid #ffcc00; align-items: flex-end; }
         .ball-icon { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: white; border: 1px solid rgba(255,255,255,0.4); box-shadow: inset -2px -2px 5px rgba(0,0,0,0.6), 0 2px 4px rgba(0,0,0,0.5); margin-bottom: 2px; }
     </style>
 </head>  
@@ -26,7 +26,7 @@
     <div id="list-impares" class="pocket-list"><div id="balls-impares"></div></div>
     <div id="ui-overlay">
         <div id="turn-msg" style="font-size:14px; margin-bottom:5px; text-transform:uppercase; letter-spacing:2px; font-weight:bold; color:#00ff88;">JOGADOR 1</div>
-        <div id="status-text" class="status-msg">Verde = Certo | Vermelho = Falta</div>
+        <div id="status-text" class="status-msg">Inicie o jogo!</div>
     </div>
 
 <script type="module">  
@@ -40,7 +40,7 @@
     let gameState = { 
         modoDefinido: false, turno: 1, p1Tipo: null, p2Tipo: null, 
         fezPontoRodada: false, aguardandoReset: false,
-        primeiraBolaAtingida: null, bateuNaTabela: false, brancaCaiu: false,
+        primeiraBolaAtingida: null, bateuNaTabelaAntes: false, brancaCaiu: false,
         matouAdversariaSemQuerer: false, bolasCaidasNoEstouro: []
     };
 
@@ -148,7 +148,7 @@
         if(isCharging) { rawForca = Math.max(0, Math.min(1.0, (t.clientY - touchPos.y)/250)); document.getElementById('power-meter').style.width = (rawForca*100)+'%'; }
         else if(!mesaMovendo) { angH -= (t.clientX - touchPos.x)*0.005; altCam = Math.max(9, Math.min(48, altCam + (t.clientY - touchPos.y)*0.2)); touchPos={x:t.clientX, y:t.clientY}; }
     };
-    window.ontouchend = () => { if(!mesaMovendo && isCharging && rawForca > 0.01) { const f = Math.pow(rawForca, 1.6)*4.2; branca.userData.vx = Math.sin(angH)*-f; branca.userData.vz = Math.cos(angH)*-f; gameState.fezPontoRodada = false; gameState.primeiraBolaAtingida = null; gameState.bateuNaTabela = false; gameState.brancaCaiu = false; gameState.matouAdversariaSemQuerer = false; gameState.bolasCaidasNoEstouro = []; } isCharging=false; rawForca=0; document.getElementById('power-meter').style.width='0%'; };
+    window.ontouchend = () => { if(!mesaMovendo && isCharging && rawForca > 0.01) { const f = Math.pow(rawForca, 1.6)*4.2; branca.userData.vx = Math.sin(angH)*-f; branca.userData.vz = Math.cos(angH)*-f; gameState.fezPontoRodada = false; gameState.primeiraBolaAtingida = null; gameState.bateuNaTabelaAntes = false; gameState.brancaCaiu = false; gameState.matouAdversariaSemQuerer = false; } isCharging=false; rawForca=0; document.getElementById('power-meter').style.width='0%'; };
 
     function loop() {
         requestAnimationFrame(loop);
@@ -163,19 +163,22 @@
                         let eraBranca = b.userData.isBranca; if(eraBranca) gameState.brancaCaiu = true;
                         if(!eraBranca) { 
                             adicionarBolaNaListaUI(b.userData); 
-                            if(!gameState.modoDefinido) gameState.bolasCaidasNoEstouro.push(b.userData.tipo); 
-                            else if(b.userData.tipo !== meuTipo) gameState.matouAdversariaSemQuerer = true;
-                            else gameState.fezPontoRodada = true;
+                            if(!gameState.modoDefinido) {
+                                gameState.modoDefinido = true; 
+                                gameState.p1Tipo = gameState.turno === 1 ? b.userData.tipo : (b.userData.tipo==='par'?'impar':'par'); 
+                                gameState.p2Tipo = gameState.p1Tipo==='par'?'impar':'par';
+                                gameState.fezPontoRodada = true;
+                            } else if(b.userData.tipo !== meuTipo) {
+                                gameState.matouAdversariaSemQuerer = true;
+                            } else {
+                                gameState.fezPontoRodada = true;
+                            }
                         }
                         b.userData.ativa=false; scene.remove(b); gameState.aguardandoReset = true;
                         setTimeout(()=>{
                             if(eraBranca) { b.position.set(0,Y_BOLAS,10); b.userData.vx=b.userData.vz=0; b.userData.ativa=true; b.userData.caindo=false; scene.add(b); }
-                            else if(!gameState.modoDefinido) { 
-                                const tC = [...new Set(gameState.bolasCaidasNoEstouro)];
-                                if(tC.length === 1) { gameState.modoDefinido = true; gameState.p1Tipo = gameState.turno === 1 ? tC[0] : (tC[0]==='par'?'impar':'par'); gameState.p2Tipo = gameState.p1Tipo==='par'?'impar':'par'; }
-                            } 
                             alvoCamera = branca; gameState.aguardandoReset = false;
-                        }, 1800);
+                        }, 1200);
                     }
                     return;
                 }
@@ -185,8 +188,8 @@
                     b.userData.mesh.rotateOnWorldAxis(new THREE.Vector3(b.userData.vz, 0, -b.userData.vx).normalize(), (spd/6)/RAIO);
                     b.userData.vx *= FRICCAO; b.userData.vz *= FRICCAO;
                     cacapas.forEach(c => { if(Math.hypot(b.position.x-c.x, b.position.z-c.z) < 1.35) b.userData.caindo=true; });
-                    if(Math.abs(b.position.x) > LIMITE_X) { b.userData.vx *= -REBOTE_TABELA; b.position.x = Math.sign(b.position.x)*LIMITE_X; if(b===branca && !gameState.primeiraBolaAtingida) gameState.bateuNaTabela = true; }
-                    if(Math.abs(b.position.z) > LIMITE_Z) { b.userData.vz *= -REBOTE_TABELA; b.position.z = Math.sign(b.position.z)*LIMITE_Z; if(b===branca && !gameState.primeiraBolaAtingida) gameState.bateuNaTabela = true; }
+                    if(Math.abs(b.position.x) > LIMITE_X) { b.userData.vx *= -REBOTE_TABELA; b.position.x = Math.sign(b.position.x)*LIMITE_X; if(b===branca && !gameState.primeiraBolaAtingida) gameState.bateuNaTabelaAntes = true; }
+                    if(Math.abs(b.position.z) > LIMITE_Z) { b.userData.vz *= -REBOTE_TABELA; b.position.z = Math.sign(b.position.z)*LIMITE_Z; if(b===branca && !gameState.primeiraBolaAtingida) gameState.bateuNaTabelaAntes = true; }
                 }
             });
             for(let i=0; i<bolas.length; i++) {
@@ -207,16 +210,32 @@
         if (movendoAntigo && !mesaMovendo && !gameState.aguardandoReset) {
             const meuTipo = (gameState.turno === 1) ? gameState.p1Tipo : gameState.p2Tipo;
             const adversarioTipo = meuTipo === 'par' ? 'impar' : 'par';
-            let txt = "Sua vez!"; let troca = !gameState.fezPontoRodada || gameState.matouAdversariaSemQuerer || gameState.brancaCaiu;
+            let txt = "Sua vez!"; 
+            let troca = !gameState.fezPontoRodada || gameState.matouAdversariaSemQuerer || gameState.brancaCaiu;
 
             if(gameState.modoDefinido) {
-                if(gameState.brancaCaiu) { removerBolas(meuTipo, 1); txt = "SUICÍDIO! (-1 sua)"; }
-                else if(gameState.matouAdversariaSemQuerer) { removerBolas(meuTipo, 1); txt = "DERRUBOU A DELE! (-1 sua)"; }
-                else if(!gameState.primeiraBolaAtingida) { removerBolas(adversarioTipo, 1); txt = "CEGOU! (+1 oponente)"; troca = true; }
+                if(gameState.brancaCaiu) { 
+                    removerBolas(meuTipo, 1); 
+                    txt = "SUICÍDIO! (-1 sua)"; 
+                }
+                else if(gameState.matouAdversariaSemQuerer) { 
+                    removerBolas(meuTipo, 1); 
+                    txt = "DERRUBOU A DELE! (-1 sua)"; 
+                }
+                else if(!gameState.primeiraBolaAtingida) { 
+                    removerBolas(adversarioTipo, 1); 
+                    txt = "CEGOU! (+1 oponente)"; 
+                    troca = true; 
+                }
                 else if(gameState.primeiraBolaAtingida.tipo !== meuTipo) {
-                    const pen = gameState.bateuNaTabela ? 1 : 2;
-                    removerBolas(adversarioTipo, pen);
-                    txt = pen === 2 ? "DIRETO NA ERRADA! (+2 oponente)" : "FALTA COM TABELA! (+1 oponente)"; troca = true;
+                    if (gameState.bateuNaTabelaAntes) {
+                        removerBolas(adversarioTipo, 1);
+                        txt = "TABELA NA ERRADA! (+1 oponente)";
+                    } else {
+                        removerBolas(adversarioTipo, 2);
+                        txt = "DIRETO NA ERRADA! (+2 oponente)";
+                    }
+                    troca = true;
                 }
             }
             if(troca) gameState.turno = (gameState.turno === 1) ? 2 : 1;

@@ -2,34 +2,29 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Sinuquinha Realista - Mira Semáforo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sinuquinha Realista</title>
     <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div id="fullscreen-btn">TELA CHEIA</div>
-    <div id="power-container"><div id="power-meter"></div></div>
-    
-    <div id="list-pares" class="pocket-list">
-        <div id="balls-pares"></div>
-    </div>
-    
-    <div id="list-impares" class="pocket-list">
-        <div id="balls-impares"></div>
-    </div>
-
-    <div id="ui-overlay">
-        <div id="turn-msg">JOGADOR 1</div>
-        <div id="status-text" class="status-msg">Mira Semáforo Ativada!</div>
-    </div>
-
     <script type="importmap">
         {
             "imports": {
-                "three": "https://cdn.skypack.dev/three@0.136.0"
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
             }
         }
     </script>
+</head>
+<body>
+    <div id="power-container"><div id="power-meter"></div></div>
+    <button id="fullscreen-btn">TELA CHEIA</button>
+    
+    <div id="ui-overlay">
+        <div id="turn-msg">TURNO: JOGADOR 1</div>
+        <div class="status-msg" id="game-status">Posicione a bola branca ou mire para jogar</div>
+    </div>
+
+    <div id="list-pares" class="pocket-list"></div>
+    <div id="list-impares" class="pocket-list"></div>
+
     <script type="module" src="script.js"></script>
 </body>
 </html>

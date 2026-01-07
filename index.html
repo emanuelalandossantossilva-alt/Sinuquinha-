@@ -2,23 +2,34 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sinuquinha BAR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Sinuquinha Realista - Mira Semáforo</title>
     <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="fullscreen-btn">TELA CHEIA</div>
+    <div id="power-container"><div id="power-meter"></div></div>
+    
+    <div id="list-pares" class="pocket-list">
+        <div id="balls-pares"></div>
+    </div>
+    
+    <div id="list-impares" class="pocket-list">
+        <div id="balls-impares"></div>
+    </div>
+
+    <div id="ui-overlay">
+        <div id="turn-msg">JOGADOR 1</div>
+        <div id="status-text" class="status-msg">Mira Semáforo Ativada!</div>
+    </div>
+
     <script type="importmap">
         {
             "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+                "three": "https://cdn.skypack.dev/three@0.136.0"
             }
         }
     </script>
-</head>
-<body>
-    <div id="power-container"><div id="power-meter"></div></div>
-    <div id="ui-overlay">
-        <div id="turn-msg">SUA VEZ</div>
-        <div class="status-msg">Arraste para mirar e solte para dar a tacada</div>
-    </div>
     <script type="module" src="script.js"></script>
 </body>
 </html>

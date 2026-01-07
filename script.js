@@ -1,125 +1,92 @@
 import * as THREE from 'three';
 
-// --- CONFIGURAÇÃO INICIAL ---
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-// Constantes Físicas
+// Constantes de Jogo
 const RAIO = 0.62;
-const FRICCAO = 0.993;
-const REBOTE = 0.65;
+const FRICCAO = 0.992;
+const REBOTE = 0.7;
 const LIMITE_X = 9.4;
 const LIMITE_Z = 17.6;
 
-// Caçapas (Posições)
 const cacapas = [
-    {x:-10, z:18.2}, {x:10, z:18.2}, {x:-10.5, z:0},
-    {x:10.5, z:0}, {x:-10, z:-18.2}, {x:10, z:-18.2}
+    {x:-10, z:18.2}, {x:10, z:18.2}, // Canto superior
+    {x:-10.5, z:0}, {x:10.5, z:0},   // Meio
+    {x:-10, z:-18.2}, {x:10, z:-18.2} // Canto inferior
 ];
 
-// --- CRIAÇÃO DA MESA (SIMPLIFICADA) ---
-const mesaGeo = new THREE.BoxGeometry(20, 1.5, 36);
-const feltroMat = new THREE.MeshStandardMaterial({ color: 0x076324 });
-const mesa = new THREE.Mesh(mesaGeo, feltroMat);
+// Mesa e Iluminação
+const mesa = new THREE.Mesh(new THREE.BoxGeometry(20, 1, 36.4), new THREE.MeshStandardMaterial({ color: 0x076324 }));
 mesa.position.y = 7;
-mesa.receiveShadow = true;
-scene.add(mesa);
+scene.add(mesa, new THREE.AmbientLight(0xffffff, 0.9));
 
-const luz = new THREE.SpotLight(0xffffff, 5);
-luz.position.set(0, 50, 0);
-luz.castShadow = true;
-scene.add(luz, new THREE.AmbientLight(0xffffff, 0.5));
-
-// --- BOLAS ---
 const bolas = [];
-function criarBola(cor, pos, isBranca = false) {
-    const geo = new THREE.SphereGeometry(RAIO, 32, 32);
-    const mat = new THREE.MeshStandardMaterial({ color: cor, roughness: 0.2 });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.copy(pos);
-    mesh.castShadow = true;
-    const obj = { 
-        mesh, 
-        vx: 0, vz: 0, 
-        ativa: true, 
-        caindo: false, 
-        isBranca 
-    };
-    scene.add(mesh);
-    bolas.push(obj);
-    return obj;
+function criarBola(cor, x, z, ehBranca = false) {
+    const b = new THREE.Mesh(new THREE.SphereGeometry(RAIO, 32, 32), new THREE.MeshStandardMaterial({ color: cor }));
+    b.position.set(x, 7.62, z);
+    const obj = { mesh: b, vx: 0, vz: 0, ativa: true, branca: ehBranca };
+    scene.add(b); bolas.push(obj); return obj;
 }
 
-const branca = criarBola(0xffffff, new THREE.Vector3(0, 7.62, 8), true);
-// Exemplo de uma bola alvo
-criarBola(0xff0000, new THREE.Vector3(0, 7.62, -8));
+const branca = criarBola(0xffffff, 0, 8, true);
+criarBola(0xffcc00, 0, -8); // Bola alvo de teste
 
-// --- CONTROLES ---
-let angulo = 0, forca = 0, carregando = false;
-window.addEventListener('mousedown', () => carregando = true);
-window.addEventListener('mouseup', () => {
+// Controles de Toque/Mouse
+let carregando = false, forca = 0, angulo = 0;
+window.onmousedown = () => carregando = true;
+window.onmouseup = () => {
     if(carregando) {
-        branca.vx = Math.sin(angulo) * -forca * 5;
-        branca.vz = Math.cos(angulo) * -forca * 5;
-        forca = 0;
-        carregando = false;
+        branca.vx = Math.sin(angulo) * -forca * 0.8;
+        branca.vz = Math.cos(angulo) * -forca * 0.8;
+        carregando = false; forca = 0;
     }
-});
-window.addEventListener('mousemove', (e) => {
+};
+window.onmousemove = (e) => {
     if(!carregando) angulo += e.movementX * 0.005;
-    else forca = Math.min(forca + 0.01, 1);
-});
+    else forca = Math.min(forca + 0.02, 1.5);
+};
 
-// --- LOOP PRINCIPAL (FÍSICA MELHORADA) ---
-function update() {
-    requestAnimationFrame(update);
-
+function loop() {
+    requestAnimationFrame(loop);
     bolas.forEach(b => {
-        if (!b.ativa) return;
-
-        // Movimentação
+        if(!b.ativa) return;
         b.mesh.position.x += b.vx;
         b.mesh.position.z += b.vz;
-        b.vx *= FRICCAO;
-        b.vz *= FRICCAO;
+        b.vx *= FRICCAO; b.vz *= FRICCAO;
 
-        // Verificação de Caçapa (Onde a barreira some)
+        // --- LÓGICA DE CAÇAPA (REMOÇÃO DE BARREIRAS) ---
         let naBoca = false;
         cacapas.forEach(c => {
-            const dist = Math.hypot(b.mesh.position.x - c.x, b.mesh.position.z - c.z);
-            if (dist < 1.6) {
-                naBoca = true; // Desativa a parede invisível
-                if (dist < 1.1) {
-                    b.caindo = true;
-                    b.ativa = false;
-                    scene.remove(b.mesh);
-                }
+            const d = Math.hypot(b.mesh.position.x - c.x, b.mesh.position.z - c.z);
+            if(d < 1.8) { // Detecta que está na área do buraco
+                naBoca = true; 
+                if(d < 1.1) { b.ativa = false; scene.remove(b.mesh); } // Caiu
             }
         });
 
-        // Colisão com Tabelas (Só se não estiver na boca da caçapa)
-        if (!naBoca) {
-            if (Math.abs(b.mesh.position.x) > LIMITE_X) {
+        // Só rebate na tabela se não estiver na boca da caçapa
+        if(!naBoca) {
+            if(Math.abs(b.mesh.position.x) > LIMITE_X) {
                 b.vx *= -REBOTE;
                 b.mesh.position.x = Math.sign(b.mesh.position.x) * LIMITE_X;
             }
-            if (Math.abs(b.mesh.position.z) > LIMITE_Z) {
+            if(Math.abs(b.mesh.position.z) > LIMITE_Z) {
                 b.vz *= -REBOTE;
                 b.mesh.position.z = Math.sign(b.mesh.position.z) * LIMITE_Z;
             }
         }
     });
 
-    // Câmera segue a branca
-    camera.position.set(branca.mesh.position.x, 25, branca.mesh.position.z + 20);
+    // Câmera dinâmica
+    camera.position.set(branca.mesh.position.x, 22, branca.mesh.position.z + 18);
     camera.lookAt(branca.mesh.position);
-
-    document.getElementById('power-meter').style.width = (forca * 100) + '%';
+    
+    document.getElementById('power-meter').style.width = (forca * 50) + '%';
     renderer.render(scene, camera);
 }
+loop();
 
-update();

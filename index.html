@@ -166,7 +166,14 @@
                     alvoCamera = b; b.position.y -= 0.15; 
                     if(b.position.y < ALTURA_MESA-2) { 
                         let eraBranca = b.userData.isBranca; 
-                        if(eraBranca) { gameState.brancaCaiu = true; }
+                        if(eraBranca) { 
+                            gameState.brancaCaiu = true; 
+                            // REGRA CORRIGIDA: Derrubou bolão, +1 oponente.
+                            if(gameState.modoDefinido) {
+                                const oponenteTipo = (gameState.turno === 1) ? gameState.p2Tipo : gameState.p1Tipo;
+                                removerBolas(oponenteTipo, 1);
+                            }
+                        }
                         if(!eraBranca) { 
                             adicionarBolaNaListaUI(b.userData); 
                             if(!gameState.modoDefinido) {
@@ -221,15 +228,13 @@
             
             if(gameState.modoDefinido) {
                 if(gameState.brancaCaiu) { 
-                    removerBolas(meuTipo, 1);
-                    txt = "BRANCA CAIU! (-1 sua)"; 
+                    txt = "BRANCA CAIU! (+1 oponente)"; 
                     troca = true;
                 }
                 else if(gameState.matouAdversariaSemQuerer) { 
-                    // REGRA PEDIDA: Bateu direto na dele e derrubou = remove +2 além da que caiu
                     if(gameState.primeiraBolaAtingida.tipo === oponenteTipo) {
                         removerBolas(oponenteTipo, 2);
-                        txt = "FALTA GRAVE! DIRETO NA DELE (+3 oponente)";
+                        txt = "DIRETO NA DELE! (+3 oponente)";
                     } else {
                         txt = "FALTA! MATOU A DELE";
                     }
@@ -257,8 +262,7 @@
         bolas.forEach(b => { if(!b.userData.ativa || b===branca || b.userData.caindo) return; const bx=b.position.x-branca.position.x, bz=b.position.z-branca.position.z, proj = bx*dX + bz*dZ; if(proj>0) { const dR = Math.hypot(bx-dX*proj, bz-dZ*proj); if(dR < RAIO*2) { const dC = proj - Math.sqrt(Math.pow(RAIO*2,2)-Math.pow(dR,2)); if(dC < distColisao) { distColisao = dC; alvoMira = b; } } } });
         if(distColisao === 1000) { let tX = dX > 0 ? (LIMITE_X - branca.position.x)/dX : (-LIMITE_X - branca.position.x)/dX; let tZ = dZ > 0 ? (LIMITE_Z - branca.position.z)/dZ : (-LIMITE_Z - branca.position.z)/dZ; distColisao = Math.min(tX, tZ); }
 
-        ghostBall.visible = !mesaMovendo && !gameState.aguardandoReset;
-        ghostStopBall.visible = !mesaMovendo && !gameState.aguardandoReset && rawForca > 0.05;
+        ghostBall.visible = !mesaMovendo && !gameState.aguardandoReset;ghostStopBall.visible = !mesaMovendo && !gameState.aguardandoReset && rawForca > 0.05;
         if(ghostBall.visible) {
             ghostBall.position.set(branca.position.x + dX * distColisao, Y_BOLAS, branca.position.z + dZ * distColisao);
             if(alvoMira) {
